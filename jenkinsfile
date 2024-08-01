@@ -1,42 +1,44 @@
 pipeline {
     agent any
+    
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
+    }
+    
     stages {
-        stage('Build') {
+        stage('Checkout') {
             steps {
-                script {
-                    bat "docker build -t sireeshaadireddi/nodejs:${env.BUILD_ID} ."
-                }
+                checkout scm
             }
         }
-        stage('Test') {
+        
+        stage('Build and Test') {
             steps {
-                script {
-                    bat """
-                        docker run --rm sireeshaadireddi/nodejs:${env.BUILD_ID} echo "Running tests..."
-                        # Add your test commands here
-                    """
-                }
+                sh 'docker build -t myapp:${BUILD_NUMBER} .'
+                sh 'docker run myapp:${BUILD_NUMBER} npm test'
             }
         }
-        stage('Push') {
+        
+        stage('Push to Docker Hub') {
             steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'SireeshaAdireddi', passwordVariable: 'Siridocker@123')]) {
-                        bat """
-                            echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
-                            docker push sireeshaadireddi/nodejs:${env.BUILD_ID}
-                            docker logout
-                        """
-                    }
-                }
+                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+                sh 'docker tag myapp:${BUILD_NUMBER} SireeshaAdireddi/myapp:${BUILD_NUMBER}'
+                sh 'docker push SireeshaAdireddi/myapp:${BUILD_NUMBER}'
             }
         }
-        stage('Deploy') {
+        
+        stage('Deploy to Staging') {
             steps {
-                script {
-                    bat "docker run -d --name nodejs -p 8080:8080 sireeshaadireddi/nodejs:${env.BUILD_ID}"
-                }
+                sh 'docker stop myapp-staging || true'
+                sh 'docker rm myapp-staging || true'
+                sh 'docker run -d --name myapp-staging -p 8081:80 SireeshaAdireddi/myapp:${BUILD_NUMBER}'
             }
+        }
+    }
+    
+    post {
+        always {
+            sh 'docker logout'
         }
     }
 }
