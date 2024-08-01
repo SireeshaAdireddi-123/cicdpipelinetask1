@@ -27,5 +27,12 @@ pipeline {
                 }
             }
         }
+        stage('Deploy') {
+            steps {
+                script {
+                    bat 'docker run -d --name myapp -p 8080:8080 SireeshaAdireddi/myapp:${env.BUILD_ID}'
+                }
+            }
+        }
     }
 }
