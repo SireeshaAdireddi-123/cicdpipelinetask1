@@ -4,7 +4,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    dockerImage = docker.build("SireeshaAdireddi/myapp:${env.BUILD_ID}")
+                    dockerImage = docker.build("SireeshaAdireddi/nodejs:${env.BUILD_ID}")
                 }
             }
         }
@@ -30,7 +30,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    bat 'docker run -d --name myapp -p 8080:8080 SireeshaAdireddi/myapp:${env.BUILD_ID}'
+                    bat 'docker run -d --name nodejs -p 8080:8080 SireeshaAdireddi/nodejs:${env.BUILD_ID}'
                 }
             }
         }
