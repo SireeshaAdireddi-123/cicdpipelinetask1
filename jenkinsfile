@@ -1,0 +1,22 @@
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                script {
+                    dockerImage = docker.build("SireeshaAdireddi/myapp:${env.BUILD_ID}")
+                }
+            }
+        }
+        stage('Test') {
+            steps {
+                script {
+                    dockerImage.inside {
+                        bat 'echo "Running tests..."'
+                        // Add your test commands here
+                    }
+                }
+            }
+        }
+    }
+}
