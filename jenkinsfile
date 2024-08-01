@@ -4,25 +4,29 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    dockerImage = docker.build("SireeshaAdireddi/nodejs:${env.BUILD_ID}")
+                    bat "docker build -t sireeshaadireddi/nodejs:${env.BUILD_ID} ."
                 }
             }
         }
         stage('Test') {
             steps {
                 script {
-                    dockerImage.inside {
-                        bat 'echo "Running tests..."'
-                        // Add your test commands here
-                    }
+                    bat """
+                        docker run --rm sireeshaadireddi/nodejs:${env.BUILD_ID} echo "Running tests..."
+                        # Add your test commands here
+                    """
                 }
             }
         }
-         stage('Push') {
+        stage('Push') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
-                        dockerImage.push()
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'SireeshaAdireddi', passwordVariable: 'Siridocker@123')]) {
+                        bat """
+                            echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
+                            docker push sireeshaadireddi/nodejs:${env.BUILD_ID}
+                            docker logout
+                        """
                     }
                 }
             }
@@ -30,7 +34,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    bat 'docker run -d --name nodejs -p 8080:8080 SireeshaAdireddi/nodejs:${env.BUILD_ID}'
+                    bat "docker run -d --name nodejs -p 8080:8080 sireeshaadireddi/nodejs:${env.BUILD_ID}"
                 }
             }
         }
